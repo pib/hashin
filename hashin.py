@@ -51,11 +51,9 @@ class PackageNotFoundError(Exception):
 def _verbose(*args):
     print("* " + " ".join(args))
 
+
 _header_registry = HeaderRegistry()
 
-def _parse_content_type(content_type):
-    header = _header_registry("content-type", content_type)
-    return (header.content_type, dict(header.params))
 
 def _download(url, binary=False):
     try:
@@ -82,8 +80,8 @@ def _download(url, binary=False):
     if binary:
         return r.read()
     
-    _, params = _parse_content_type(r.headers.get("Content-Type", ""))
-    encoding = params.get("charset", "utf-8")
+    content_type = _header_registry("content-type", r.headers.get("Content-Type", ""))
+    encoding = content_type.params.get("charset", "utf-8")
     return r.read().decode(encoding)
 
 
