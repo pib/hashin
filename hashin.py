@@ -7,8 +7,8 @@ See README :)
 
 from __future__ import print_function
 import argparse
-import cgi
 import difflib
+from email.policy import EmailPolicy
 import tempfile
 import os
 import re
@@ -51,6 +51,9 @@ class PackageNotFoundError(Exception):
 def _verbose(*args):
     print("* " + " ".join(args))
 
+def parse_content_type(content_type):
+    header = EmailPolicy.header_factory("content-type", content_type)
+    return (header.content_type, dict(header.params))
 
 def _download(url, binary=False):
     try:
@@ -64,7 +67,7 @@ def _download(url, binary=False):
     # Note that urlopen will, by default, follow redirects.
     status_code = r.getcode()
     if 301 <= status_code < 400:
-        location, _ = cgi.parse_header(r.headers.get("location", ""))
+        location = r.headers.get("location", "")
         if not location:
             raise PackageError(
                 "No 'Location' header on {0} ({1})".format(url, status_code)
@@ -76,7 +79,8 @@ def _download(url, binary=False):
         raise PackageError("Download error. {0} on {1}".format(status_code, url))
     if binary:
         return r.read()
-    _, params = cgi.parse_header(r.headers.get("Content-Type", ""))
+    
+    _, params = parse_content_type(r.headers.get("Content-Type", ""))
     encoding = params.get("charset", "utf-8")
     return r.read().decode(encoding)
 
